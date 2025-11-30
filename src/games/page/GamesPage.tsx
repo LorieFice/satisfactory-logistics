@@ -73,7 +73,7 @@ export function GamesPage(props: IGamesPageProps) {
                       )} */}
                     </Group>
                     <Group gap="xs">
-                      <Text size="xs" c="dark.2">
+                      <Text size="xs" c="dark.2" component="span">
                         <Group gap={4} align="center">
                           <IconCalendar size={16} />{' '}
                           {dayjs(game.createdAt).format('DD/MM/YYYY HH:mm')}

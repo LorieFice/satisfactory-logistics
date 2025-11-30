@@ -77,6 +77,7 @@ export type Database = {
           name: string | null
           share_token: string | null
           updated_at: string
+          version: number
         }
         Insert: {
           author_id: string
@@ -86,6 +87,7 @@ export type Database = {
           name?: string | null
           share_token?: string | null
           updated_at?: string
+          version?: number
         }
         Update: {
           author_id?: string
@@ -95,6 +97,7 @@ export type Database = {
           name?: string | null
           share_token?: string | null
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -192,7 +195,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_game_by_share_token: {
+        Args: {
+          game_uuid: string
+          token: string
+        }
+        Returns: {
+          author_id: string
+          created_at: string
+          data: Json | null
+          id: string
+          name: string | null
+          share_token: string | null
+          updated_at: string
+          version: number
+        }[]
+      }
       has_user_shared_game_id: {
+        Args: {
+          gid: string
+        }
+        Returns: boolean
+      }
+      is_game_owner: {
         Args: {
           gid: string
         }
@@ -201,6 +226,13 @@ export type Database = {
       is_user_sharing_game_with: {
         Args: {
           uid: string
+        }
+        Returns: boolean
+      }
+      join_game_by_share_token: {
+        Args: {
+          game_uuid: string
+          token: string
         }
         Returns: boolean
       }

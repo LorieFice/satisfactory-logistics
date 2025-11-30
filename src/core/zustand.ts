@@ -5,6 +5,7 @@ import { factoryViewSlice } from '@/factories/store/factoryViewSlice';
 import { factoryViewSortActions } from '@/factories/store/factoryViewSortActions';
 import { gamesSlice } from '@/games/gamesSlice';
 import { gameSaveSlice } from '@/games/save/gameSaveSlice';
+import { gameCollaborationActions } from '@/games/store/gameCollaborationActions';
 import { gameFactoriesActions } from '@/games/store/gameFactoriesActions';
 import { gameRemoteActions } from '@/games/store/gameRemoteActions';
 import { solverFactoriesActions } from '@/solver/store/solverFactoriesActions';
@@ -41,6 +42,7 @@ const slicesWithActions = withActions(
   gameFactoriesActions,
   solverFactoriesActions,
   gameRemoteActions,
+  gameCollaborationActions,
   factoryViewSortActions,
 );
 

@@ -1,6 +1,8 @@
 import { useSession } from '@/auth/authSelectors';
+import { SyncStatusIndicator } from '@/collaboration/SyncStatusIndicator';
+import { useGameSubscription } from '@/collaboration/useGameSubscription';
 import { useShallowStore, useStore } from '@/core/zustand';
-import { Button, Menu } from '@mantine/core';
+import { Button, Group, Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import {
@@ -43,7 +45,7 @@ function useGameOptions() {
   }, [gamesIds, gameNames]);
 }
 
-export function GameMenu(props: IGameMenuProps) {
+export function GameMenu(_props: IGameMenuProps) {
   const gameName = useStore(
     state => state.games.games[state.games.selected ?? '']?.name,
   );
@@ -55,9 +57,12 @@ export function GameMenu(props: IGameMenuProps) {
   const isSaving = useStore(state => state.gameSave.isSaving);
   const navigate = useNavigate();
 
-  const [opened, { toggle, open, close }] = useDisclosure();
+  const [opened, { open, close }] = useDisclosure();
 
   const gameOptions = useGameOptions();
+
+  // Subscribe to realtime updates for the selected game
+  useGameSubscription(selectedId);
 
   useEffect(() => {
     loadRemoteGamesList().catch(console.error);
@@ -90,19 +95,21 @@ export function GameMenu(props: IGameMenuProps) {
 
   return (
     <>
-      <Button.Group>
-        <Menu>
-          <Menu.Target>
-            <Button
-              loading={isSaving}
-              variant="light"
-              color="gray"
-              leftSection={<IconDeviceGamepad size={16} />}
-              rightSection={<IconChevronDown size={12} stroke={1.5} />}
-            >
-              {gameName ?? 'Select game'}
-            </Button>
-          </Menu.Target>
+      <Group gap="xs">
+        <SyncStatusIndicator gameId={selectedId} />
+        <Button.Group>
+          <Menu>
+            <Menu.Target>
+              <Button
+                loading={isSaving}
+                variant="light"
+                color="gray"
+                leftSection={<IconDeviceGamepad size={16} />}
+                rightSection={<IconChevronDown size={12} stroke={1.5} />}
+              >
+                {gameName ?? 'Select game'}
+              </Button>
+            </Menu.Target>
           <Menu.Dropdown>
             <Menu.Label>Change game</Menu.Label>
             {gameOptions.map(option => (
@@ -176,16 +183,17 @@ export function GameMenu(props: IGameMenuProps) {
           </Menu.Dropdown>
         </Menu>
         <Button
-          className={cx(classes.gameMenuSecondaryButton)}
-          variant="light"
-          color="gray"
-          onClick={() => {
-            handleSaveGame(selectedId);
-          }}
-        >
-          <IconDeviceFloppy size={16} />
-        </Button>
-      </Button.Group>
+            className={cx(classes.gameMenuSecondaryButton)}
+            variant="light"
+            color="gray"
+            onClick={() => {
+              handleSaveGame(selectedId);
+            }}
+          >
+            <IconDeviceFloppy size={16} />
+          </Button>
+        </Button.Group>
+      </Group>
       {selectedId && (
         <GameDetailModal opened={opened} close={close} gameId={selectedId} />
       )}

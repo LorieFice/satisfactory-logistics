@@ -18,7 +18,7 @@ export interface Game {
 
 export type GameRemoteData = Pick<
   Tables<'games'>,
-  'author_id' | 'created_at' | 'id' | 'share_token'
+  'author_id' | 'created_at' | 'id' | 'share_token' | 'version'
 >;
 
 export interface GameSettings {

@@ -91,7 +91,7 @@ export function GamePlayers(props: IGamePlayersProps) {
       <GamePlayerBadge isAuthor player={players.author} />
 
       {players.shared_games.map(player => (
-        <GamePlayerBadge player={player.user} onDelete={handleDelete} />
+        <GamePlayerBadge key={player.id} player={player.user} onDelete={handleDelete} />
       ))}
     </Group>
   );
