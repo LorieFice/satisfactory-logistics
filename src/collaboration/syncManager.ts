@@ -1,5 +1,5 @@
 import type { Json } from '@/core/database.types';
-import { supabaseClient } from '@/core/supabase';
+import { supabaseClient, refreshSession } from '@/core/supabase';
 import { useStore } from '@/core/zustand';
 import { serializeGame } from '@/games/store/gameFactoriesActions';
 import { debounce } from 'lodash';
@@ -8,6 +8,21 @@ import { loglev } from '@/core/logger/log';
 const logger = loglev.getLogger('collaboration:sync');
 
 const SYNC_DEBOUNCE_MS = 1000;
+
+/**
+ * Check if an error is a JWT expired error
+ */
+function isJwtExpiredError(error: unknown): boolean {
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { message?: string; code?: string };
+    return (
+      err.message?.includes('JWT expired') ||
+      err.message?.includes('token is expired') ||
+      err.code === 'PGRST301'
+    );
+  }
+  return false;
+}
 
 /**
  * Debounced function to sync a game to the remote database.
@@ -52,6 +67,38 @@ export const syncGameToRemote = debounce(async (gameId: string) => {
       .single();
 
     if (error) {
+      // If JWT expired, try to refresh and retry once
+      if (isJwtExpiredError(error)) {
+        logger.info('JWT expired, attempting to refresh token...');
+        const newSession = await refreshSession();
+        if (newSession) {
+          logger.info('Token refreshed, retrying sync...');
+          useStore.getState().setSession(newSession);
+          // Retry the sync
+          const retryResult = await supabaseClient
+            .from('games')
+            .update({
+              data: serialized as unknown as Json,
+              version: currentVersion + 1,
+              name: game.name,
+            })
+            .eq('id', game.savedId)
+            .select('version')
+            .single();
+
+          if (retryResult.error) {
+            logger.error('Sync failed after token refresh', { error: retryResult.error });
+            useStore.getState().setSyncError(gameId, retryResult.error.message);
+            return;
+          }
+
+          logger.info('Sync successful after token refresh', { newVersion: retryResult.data.version });
+          useStore.getState().setGameVersion(gameId, retryResult.data.version);
+          useStore.getState().setSyncError(gameId, null);
+          return;
+        }
+      }
+
       logger.error('Sync failed', { error });
       useStore.getState().setSyncError(gameId, error.message);
       return;
@@ -120,6 +167,36 @@ export async function syncGameImmediately(gameId: string): Promise<boolean> {
       .single();
 
     if (error) {
+      // If JWT expired, try to refresh and retry once
+      if (isJwtExpiredError(error)) {
+        logger.info('JWT expired during immediate sync, attempting to refresh token...');
+        const newSession = await refreshSession();
+        if (newSession) {
+          logger.info('Token refreshed, retrying immediate sync...');
+          useStore.getState().setSession(newSession);
+          // Retry the sync
+          const retryResult = await supabaseClient
+            .from('games')
+            .update({
+              data: serialized as unknown as Json,
+              version: currentVersion + 1,
+              name: game.name,
+            })
+            .eq('id', game.savedId)
+            .select('version')
+            .single();
+
+          if (retryResult.error) {
+            useStore.getState().setSyncError(gameId, retryResult.error.message);
+            return false;
+          }
+
+          useStore.getState().setGameVersion(gameId, retryResult.data.version);
+          useStore.getState().setSyncError(gameId, null);
+          return true;
+        }
+      }
+
       useStore.getState().setSyncError(gameId, error.message);
       return false;
     }

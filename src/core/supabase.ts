@@ -13,4 +13,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabaseClient = createClient<Database>(
   supabaseUrl || '',
   supabaseAnonKey || '',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  },
 );
+
+/**
+ * Manually refresh the session token.
+ * Call this when you get a JWT expired error.
+ */
+export async function refreshSession() {
+  const { data, error } = await supabaseClient.auth.refreshSession();
+  if (error) {
+    console.error('Failed to refresh session:', error);
+    // If refresh fails, the user needs to re-login
+    return null;
+  }
+  return data.session;
+}
